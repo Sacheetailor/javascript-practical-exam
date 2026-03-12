@@ -1,96 +1,111 @@
-const myForm = document.querySelector("#myForm");
-const inputs = document.querySelectorAll("#myForm #form-input");
-const myTable = document.querySelector("#myTable tbody");
+let tasks = [];
 
-let editTask = JSON.parse(localStorage.getItem("EditTask")) || {};
-let list = JSON.parse(localStorage.getItem("TaskList")) || [];
-let data = {};
+// Load tasks from localStorage
+function loadTasks() {
+  let data = localStorage.getItem("tasks");
 
-// input values store
-inputs.forEach(function (input) {
-    input.addEventListener("input", function (e) {
-        let name = e.target.name;
-        let value = e.target.value;
-        data[name] = value;
-    });
-});
-
-// form submit
-if (myForm) {
-    myForm.addEventListener("submit", function (e) {
-        e.preventDefault();
-
-        if (data.id) {
-            list = list.map(function (item) {
-                return item.id == data.id ? data : item;
-            });
-        } else {
-            data.id = Date.now();
-            list.push(data);
-        }
-
-        localStorage.setItem("TaskList", JSON.stringify(list));
-        location.href = "../html/view-task.html";
-        myForm.reset();
-    });
+  if (data) {
+    tasks = JSON.parse(data);
+  } else {
+    tasks = [];
+  }
 }
 
-// display tasks
-function handleDisplay(list) {
-    myTable.innerHTML = "";
+// Save tasks
+function saveTasks() {
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+}
 
-    list.forEach(function (item, index) {
-        let row = document.createElement("tr");
+// Add Task
+function addTask(title, desc, dueDate, priority) {
 
-        row.innerHTML = `
-        <td>${index + 1}</td>
-        <td>${item.title}</td>
-        <td>${item.description}</td>
-        <td>${item.duedate}</td>
-        <td>${item.priority}</td>
+  loadTasks();
+
+  let task = {
+    id: Date.now(),
+    title: title,
+    desc: desc,
+    dueDate: dueDate,
+    priority: priority
+  };
+
+  tasks.push(task);
+
+  saveTasks();
+
+  alert("Task Added");
+
+  window.location.href = "view-task.html";
+}
+
+// Show Tasks in Table
+function displayTasks() {
+
+  loadTasks();
+
+  let table = document.querySelector("#myTable tbody");
+
+  if (!table) return;
+
+  table.innerHTML = "";
+
+  for (let i = 0; i < tasks.length; i++) {
+
+    table.innerHTML += `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${tasks[i].title}</td>
+        <td>${tasks[i].desc}</td>
+        <td>${tasks[i].dueDate}</td>
+        <td>${tasks[i].priority}</td>
         <td>
-            <button class="btn btn-danger" onclick="handleDelete(${item.id})">Delete</button>
-            <button class="btn btn-warning" onclick="handleEdit(${item.id})">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteTask(${tasks[i].id})">
+            Delete
+          </button>
         </td>
-        `;
-
-        myTable.appendChild(row);
-    });
+      </tr>
+    `;
+  }
 }
 
-if (myTable) {
-    handleDisplay(list);
+// Delete Task
+function deleteTask(id) {
+
+  loadTasks();
+
+  let newTasks = [];
+
+  for (let i = 0; i < tasks.length; i++) {
+    if (tasks[i].id != id) {
+      newTasks.push(tasks[i]);
+    }
+  }
+
+  tasks = newTasks;
+
+  saveTasks();
+
+  displayTasks();
 }
 
-// delete task
-function handleDelete(id) {
-    list = list.filter(function (item) {
-        return item.id != id;
-    });
+// Form Submit
+let form = document.querySelector("#myForm");
 
-    localStorage.setItem("TaskList", JSON.stringify(list));
-    handleDisplay(list);
+if (form) {
+
+  form.addEventListener("submit", function (e) {
+
+    e.preventDefault();
+
+    let title = form.title.value;
+    let desc = form.description.value;
+    let dueDate = form.duedate.value;
+    let priority = form.priority.value;
+
+    addTask(title, desc, dueDate, priority);
+  });
+
 }
 
-// edit task
-function handleEdit(id) {
-    let data = list.find(function (item) {
-        return item.id == id;
-    });
-
-    localStorage.setItem("EditTask", JSON.stringify(data));
-    location.href = "../html/edit-task.html";
-}
-
-// display edit data
-function displayTaskData() {
-    inputs.forEach(function (input) {
-        let name = input.name;
-        input.value = editTask[name];
-    });
-}
-
-if (editTask.id) {
-    data = editTask;
-    displayTaskData();
-}
+// Page Load
+displayTasks();
